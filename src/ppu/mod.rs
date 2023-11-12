@@ -244,7 +244,7 @@ impl Ppu {
                 * 16;
             let tile_location = tile_base + tile_offset;
             let tile_attribut = Attribut::from(self.get_vram(1, tile_addr));
-            let tile_y = if tile_attribut.y_flip {
+            let tile_y = if tile_attribut.flip_y {
                 7 - picture_y % 8
             } else {
                 picture_y % 8
@@ -255,7 +255,7 @@ impl Ppu {
                     let b = self.get_vram(0, tile_location + u16::from(tile_y * 2) + 1);
                     [a, b]
                 };
-            let tile_x = if tile_attribut.x_flip {
+            let tile_x = if tile_attribut.flip_x {
                 7 - picture_x % 8
             } else {
                 picture_x % 8
@@ -300,7 +300,7 @@ impl Ppu {
                 continue;
             }
 
-            let tile_y = if tile_attribut.y_flip {
+            let tile_y = if tile_attribut.flip_y {
                 sprite_size - 1 - self.lcdc_y.wrapping_sub(picture_y)
             } else {
                 self.lcdc_y.wrapping_sub(picture_y)
@@ -317,7 +317,7 @@ impl Ppu {
                 if picture_x.wrapping_add(x) >= (SCREEN_WIDTH as u8) {
                     continue;
                 }
-                let tile_x = if tile_attribut.x_flip { 7 - x } else { x };
+                let tile_x = if tile_attribut.flip_x { 7 - x } else { x };
                 let color_low = usize::from(tile_y_data[0] & (0x80 >> tile_x) != 0);
                 let color_high = if tile_y_data[1] & (0x80 >> tile_x) != 0 {
                     2
