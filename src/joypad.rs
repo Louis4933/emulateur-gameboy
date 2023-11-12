@@ -27,6 +27,17 @@ impl Joypad {
             interrupt: InterruptFlag::None as u8,
         }
     }
+
+    // Méthode pour signaler qu'une touche est enfoncée
+    pub fn keydown(&mut self, key: JoypadKey) {
+        self.matrix &= !(key as u8);
+        self.interrupt |= InterruptFlag::Joypad as u8;
+    }
+
+    // Méthode pour signaler qu'une touche est relâchée
+    pub fn keyup(&mut self, key: JoypadKey) {
+        self.matrix |= key as u8;
+    }
 }
 
 impl Memoire for Joypad {
