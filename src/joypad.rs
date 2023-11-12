@@ -51,4 +51,8 @@ impl Memoire for Joypad {
         }
         self.select
     }
+    fn set_octet(&mut self, addr: u16, value: u8) {
+        assert_eq!(addr, 0xFF00);
+        self.select = value;
+    }
 }
