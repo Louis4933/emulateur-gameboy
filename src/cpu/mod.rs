@@ -5,11 +5,12 @@ use std::rc::Rc;
 use std::thread;
 use std::time;
 
-use crate::cpu::registres::Registres;
+use crate::cpu::registres::Registers;
 use crate::memoire::Memoire;
 
 pub struct Cpu {
-    pub registres: Registres,
+    pub registres: Registers,
+    pub memoire: Rc<RefCell<dyn Memoire>>,
     pub halted: bool,
     pub stopped: bool,
     pub ei: bool,
@@ -18,7 +19,8 @@ pub struct Cpu {
 impl Cpu {
     pub fn new(memoire: Rc<RefCell<dyn Memoire>>) -> Cpu {
         Cpu {
-            registres: Registres::new(),
+            registres: Registers::new(),
+            memoire,
             halted: false,
             stopped: false,
             ei: false,
