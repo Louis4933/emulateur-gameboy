@@ -95,6 +95,25 @@ impl Mmu {
         }
         self.prepare_vitesse_switch = false;
     }
+    
+    pub fn run_cycles(&mut self, cycles: u32) -> u32 {
+        let cpu_divider = self.vitesse as u32;
+        let ppu_cycles = cycles / cpu_divider ;
+        let cpu_cycles = cycles + cpu_divider;
+
+        self.timer.run_cycles(cpu_cycles);
+        self.interruptions_asserted |= self.timer.interrupt;
+        self.timer.interrupt = InterruptFlag::None as u8;
+
+        self.interruptions_asserted |= self.joypad.interrupt;
+        self.joypad.interrupt = InterruptFlag::None as u8;
+
+        self.ppu.run_cycles(ppu_cycles);
+        self.interruptions_asserted |= self.ppu.interrupt;
+        self.ppu.interrupt = InterruptFlag::None as u8;
+
+        ppu_cycles
+    }
 }
 
 impl Memoire for Mmu {
