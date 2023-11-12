@@ -1,2 +1,4 @@
-# emulateur-gameboy
-Émulateur simple de la gameboy en Rust
+# Émulateur de gameboy en Rust
+
+# Pour lancer l'émulateur
+cargo run --release -- "./path/to/rom.gb"
