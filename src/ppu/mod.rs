@@ -352,3 +352,85 @@ impl Ppu {
 }
 
 impl Memoire for Ppu {
+    fn get_octet(&self, addr: u16) -> u8 {
+        match addr {
+            0x8000..=0x9FFF => self.vram[self.vram_bank * 0x2000 + addr as usize - 0x8000],
+            0xFE00..=0xFE9F => self.oam[addr as usize - 0xFE00],
+            0xFF40 => self.lcd_control.data,
+            0xFF41 => {
+                let bit6 = if self.lcd_status.lyc_interrupt_enabled {
+                    0x40
+                } else {
+                    0x00
+                };
+                let bit5 = if self.lcd_status.m2_oam_interrupt_enabled {
+                    0x20
+                } else {
+                    0x00
+                };
+                let bit4 = if self.lcd_status.m1_vblank_interrupt_enabled {
+                    0x10
+                } else {
+                    0x00
+                };
+                let bit3 = if self.lcd_status.m0_hblank_interrupt_enabled {
+                    0x08
+                } else {
+                    0x00
+                };
+                let bit2 = if self.lcdc_y == self.ly_compare {
+                    0x04
+                } else {
+                    0x00
+                };
+                bit6 | bit5 | bit4 | bit3 | bit2 | self.lcd_status.mode
+            }
+            0xFF42 => self.scroll_y,
+            0xFF43 => self.scroll_x,
+            0xFF44 => self.lcdc_y,
+            0xFF45 => self.ly_compare,
+            0xFF47 => self.bg_palette,
+            0xFF48 => self.object_pallete_0,
+            0xFF49 => self.object_pallete_1,
+            0xFF4A => self.window_y,
+            0xFF4B => self.window_x,
+            0xFF4F => 0xFE | self.vram_bank as u8,
+            _ => panic!("ppu: invalid address {:#06X?}", addr),
+        }
+    }
+
+    fn set_octet(&mut self, addr: u16, value: u8) {
+        match addr {
+            0x8000..=0x9FFF => self.vram[self.vram_bank * 0x2000 + addr as usize - 0x8000] = value,
+            0xFE00..=0xFE9F => self.oam[addr as usize - 0xFE00] = value,
+            0xFF40 => {
+                self.lcd_control.data = value;
+                if !self.lcd_control.has_bit(7) {
+                    self.dots = 0;
+                    self.lcdc_y = 0;
+                    self.lcd_status.mode = 0;
+                    // Clean l'écran
+                    self.data = [Pixel::new(); SCREEN_WIDTH * SCREEN_HEIGHT];
+                    self.vblank = true;
+                }
+            }
+            0xFF41 => {
+                self.lcd_status.lyc_interrupt_enabled = value & 0x40 != 0x00;
+                self.lcd_status.m2_oam_interrupt_enabled = value & 0x20 != 0x00;
+                self.lcd_status.m1_vblank_interrupt_enabled = value & 0x10 != 0x00;
+                self.lcd_status.m0_hblank_interrupt_enabled = value & 0x08 != 0x00;
+            }
+            0xFF42 => self.scroll_y = value,
+            0xFF43 => self.scroll_x = value,
+            0xFF44 => {}
+            0xFF45 => self.ly_compare = value,
+            0xFF47 => self.bg_palette = value, 
+            0xFF48 => self.object_pallete_0 = value,
+            0xFF49 => self.object_pallete_1 = value,
+            0xFF4A => self.window_y = value,
+            0xFF4B => self.window_x = value,
+            0xFF4F => self.vram_bank = (value & 0x01) as usize,
+            _ => panic!("ppu: invalid address {:#06X?}", addr),
+        }
+    }
+}
