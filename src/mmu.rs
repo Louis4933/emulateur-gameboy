@@ -110,10 +110,42 @@ impl Memoire for Mmu {
                 }
                 _ => 0x00,
             },
+            0xE000..=0xFDFF => match addr {
+                0xE000..=0xEFFF => self.wram[addr as usize - 0xE000],
+                0xF000..=0xFDFF => {
+                    self.wram[addr as usize - 0xF000 + WRAM_BANK_SIZE * self.wram_bank]
+                }
+                _ => 0x00,
+            },
+            0xFE00..=0xFE9F => self.ppu.get_octet(addr),
+            0xFEA0..=0xFEFF => 0x00,
+            0xFF00..=0xFF7F => {
+                match addr {
+                    0xFF00 => self.joypad.get_octet(addr),
+                    0xFF04..=0xFF07 => self.timer.get_octet(addr),
+                    0xFF0F => self.interruptions_asserted,
+                    0xFF40..=0xFF45 | 0xFF47..=0xFF4B => self.ppu.get_octet(addr),
+                    0xFF4D => {
+                        let current_vitesse_bit: u8 = match self.vitesse {
+                            Vitesse::Double => 0b1000_0000,
+                            Vitesse::Normal => 0b0000_0000,
+                        };
+                        let prepare_switch_bit: u8 = match self.prepare_vitesse_switch {
+                            true => 0b0000_0001,
+                            false => 0b0000_0000,
+                        };
+                        current_vitesse_bit | prepare_switch_bit
+                    }
+                    0xFF4F => self.ppu.get_octet(addr),
+                    0xFF68..=0xFF6B => self.ppu.get_octet(addr),
+                    _ => 0x00,
+                }
+            }
             0xFF80..=0xFFFE => self.hram[addr as usize - 0xFF80],
             0xFFFF => self.interruptions_enabled,
         }
     }
+
 
     fn set_octet(&mut self, addr: u16, value: u8) {
         match addr {
@@ -127,6 +159,46 @@ impl Memoire for Mmu {
                 }
                 _ => {}
             },
+            0xE000..=0xFDFF => match addr {
+                0xE000..=0xEFFF => self.wram[addr as usize - 0xE000] = value,
+                0xF000..=0xFDFF => {
+                    self.wram[addr as usize - 0xF000 + WRAM_BANK_SIZE * self.wram_bank] = value
+                }
+                _ => {}
+            },
+            0xFE00..=0xFE9F => self.ppu.set_octet(addr, value),
+            0xFEA0..=0xFEFF => {}
+            0xFF00..=0xFF7F => {
+                match addr {
+                    0xFF00 => self.joypad.set_octet(addr, value),
+                    0xFF04..=0xFF07 => self.timer.set_octet(addr, value),
+                    0xFF0F => self.interruptions_asserted = value,
+                    0xFF40..=0xFF45 => self.ppu.set_octet(addr, value),
+                    0xFF46 => {
+                        assert!(
+                            value <= 0xF1,
+                        );
+                        let base = u16::from(value) << 8;
+                        for i in 0..0xA0 {
+                            let value = self.get_octet(base + i);
+                            self.set_octet(0xFE00 + i, value);
+                        }
+                    }
+                    0xFF47..=0xFF4B => self.ppu.set_octet(addr, value),
+                    0xFF4D => {
+                        self.prepare_vitesse_switch = (value & 0b0000_0001) == 0b0000_0001;
+                    }
+                    0xFF4F => self.ppu.set_octet(addr, value),
+                    0xFF68..=0xFF6B => self.ppu.set_octet(addr, value),
+                    0xFF70 => {
+                        self.wram_bank = match value & 0x07 {
+                            0x00 => 1,
+                            _ => value as usize,
+                        };
+                    }
+                    _ => {}
+                }
+            }
             0xFF80..=0xFFFE => self.hram[addr as usize - 0xFF80] = value,
             0xFFFF => self.interruptions_enabled = value,
         }
