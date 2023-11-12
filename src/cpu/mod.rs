@@ -61,10 +61,46 @@ impl Cpu {
         result
     }
 
+    // Le flag IME (interrupt master enable) est réinitialisé et interdit toutes les interruptions.
     pub fn gerer_interruptions(&mut self) -> u32 {
+        if !self.halted && !self.ei {
+            return 0;
+        }
+        let interruptions_asserted = self.get_octet_in_memoire(0xFF0F);
+        let interruptions_enabled = self.get_octet_in_memoire(0xFFFF);
+        let interruptions = interruptions_asserted & interruptions_enabled;
+        if interruptions == 0x00 {
+            return 0;
+        }
+        self.halted = false;
+        if !self.ei {
+            return 0;
+        }
+        self.ei = false;
+        // Consomme une interruption et écrit le reste en mémoire
+        let n = interruptions.trailing_zeros();
+        let interruptions_asserted = interruptions_asserted & !(1 << n);
+        self.set_octet_in_memoire(0xFF0F, interruptions_asserted);
+        self.add_to_stack(self.registres.pc);
+        // Régle le PC pour qu'il corresponde au programme d'interruption du process
+        self.registres.pc = 0x0040 | ((n as u16) << 3);
+        4
     }
 
     pub fn run(&mut self) -> u32 {
+        let cycles = {
+            match self.gerer_interruptions() {
+                0 => {}
+                n => return n,
+            }
+            if self.halted {
+                1
+            } else {
+                let op_code = self.get_octet_at_pc();
+                self.execute(op_code)
+            }
+        };
+        cycles * 4
     }
 }
 
