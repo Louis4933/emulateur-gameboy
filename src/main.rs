@@ -1,10 +1,9 @@
-use crate::lib::GameboyButton;
-use crate::lib::Gameboy;
 use std::fs::File;
 use std::io::Read;
 
 use argparse::{ArgumentParser, Store};
 use minifb::{Key, Scale, Window, WindowOptions};
+use emulateur_gameboy::{GameboyButton, Gameboy};
 
 const KEY_MAPPINGS: [(Key, GameboyButton); 8] = [
     (Key::Right, GameboyButton::Right),
