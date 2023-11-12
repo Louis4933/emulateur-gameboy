@@ -83,6 +83,7 @@ impl Mmu {
         mmu.set_octet(0xFF49, 0xFF);
         mmu.set_octet(0xFF4A, 0x00);
         mmu.set_octet(0xFF4B, 0x00);
+        mmu
     }
 
     pub fn perform_vitesse_switch(&mut self) {
@@ -95,7 +96,7 @@ impl Mmu {
         }
         self.prepare_vitesse_switch = false;
     }
-    
+
     pub fn run_cycles(&mut self, cycles: u32) -> u32 {
         let cpu_divider = self.vitesse as u32;
         let ppu_cycles = cycles / cpu_divider ;

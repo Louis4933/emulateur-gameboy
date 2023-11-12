@@ -1,5 +1,5 @@
-use crate::library::GameboyButton;
-use crate::library::Gameboy;
+use crate::lib::GameboyButton;
+use crate::lib::Gameboy;
 use std::fs::File;
 use std::io::Read;
 
